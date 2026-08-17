@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Game Camera</title>
+		<link rel="stylesheet" href="style.css" />
+		<script type="module" src="main.js"></script>
+	</head>
+	<body>
+		<main>
+			<div class="stage">
+				<svg
+					class="still"
+					viewBox="0 0 160 144"
+					role="img"
+					aria-label="An empty game camera screen"
+					shape-rendering="crispEdges"
+				>
+					<rect width="160" height="144" fill="#306230" />
+					<rect x="15" y="15" width="130" height="114" fill="#0f380f" />
+					<rect x="16" y="16" width="128" height="112" fill="#9bbc0f" />
+				</svg>
+				<canvas width="160" height="144" aria-label="Game camera view" hidden></canvas>
+			</div>
+			<div class="controls">
+				<button id="on" disabled>Camera on</button>
+				<button id="snap" hidden>Take photo</button>
+				<button id="off" hidden>Camera off</button>
+				<span class="modes">
+					<label><input type="radio" name="mode" value="Green" checked disabled /> Green</label>
+					<label><input type="radio" name="mode" value="Gray" disabled /> Gray</label>
+					<label><input type="radio" name="mode" value="Color" disabled /> Color</label>
+				</span>
+				<span role="status"></span>
+			</div>
+			<p class="about">
+				The page does all image processing in the browser. It does not send images to a server. Based on
+				<a href="https://github.com/Raphael-Boichot/Game-Boy-Camera-Faker">Raphael Boichot's reverse-engineering</a>
+				of the M64282FP sensor. <a href="LICENSE.txt">GPL-3.0</a>.
+			</p>
+		</main>
+	</body>
+</html>
