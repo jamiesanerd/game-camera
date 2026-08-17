@@ -33,6 +33,10 @@
 					<label><input type="radio" name="mode" value="Color" disabled /> Color</label>
 				</span>
 				<span role="status"></span>
+				<span class="file-hint" hidden>The camera does not operate when you open this page as a file. Start a web server in this folder. Refer to the README.</span>
+				<script>
+					if (location.protocol === 'file:') document.querySelector('.file-hint').hidden = false;
+				</script>
 			</div>
 			<p class="about">
 				The page does all image processing in the browser. It does not send images to a server. Based on

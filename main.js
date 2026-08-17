@@ -129,7 +129,15 @@ async function open() {
 		return;
 	}
 	video.srcObject = stream;
-	await video.play();
+	try {
+		await video.play();
+	} catch {
+		stream.getTracks().forEach((track) => track.stop());
+		stream = null;
+		video.srcObject = null;
+		status.textContent = 'The camera started, but its video wouldn’t play.';
+		return;
+	}
 	on = true;
 	render();
 	frame = requestAnimationFrame(tick);
