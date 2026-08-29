@@ -131,7 +131,7 @@ function stop() {
 async function open() {
 	status.textContent = '';
 	if (!navigator.mediaDevices?.getUserMedia) {
-		status.textContent = 'This browser can’t use a camera here (it needs HTTPS or localhost).';
+		status.textContent = 'Camera not available.';
 		return;
 	}
 	try {
@@ -140,7 +140,7 @@ async function open() {
 			audio: false
 		});
 	} catch {
-		status.textContent = 'No camera, or permission was refused.';
+		status.textContent = 'Camera access failed.';
 		return;
 	}
 	video.srcObject = stream;
@@ -150,7 +150,7 @@ async function open() {
 		stream.getTracks().forEach((track) => track.stop());
 		stream = null;
 		video.srcObject = null;
-		status.textContent = 'The camera started, but its video wouldn’t play.';
+		status.textContent = 'Camera video failed.';
 		return;
 	}
 	const devices = await navigator.mediaDevices.enumerateDevices().catch(() => []);
@@ -187,7 +187,7 @@ async function openPicture(file) {
 	try {
 		bitmap = await createImageBitmap(file);
 	} catch {
-		status.textContent = 'That file could not be opened as an image.';
+		status.textContent = 'Image failed to open.';
 		return;
 	}
 	closeCamera();
