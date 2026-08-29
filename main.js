@@ -12,6 +12,9 @@ const stage = document.querySelector('.stage');
 const still = document.querySelector('.still');
 const screen = document.querySelector('canvas');
 const onButton = document.querySelector('#on');
+const switchButton = document.querySelector('#switch');
+const pickButton = document.querySelector('#pick');
+const fileInput = document.querySelector('#file');
 const snapButton = document.querySelector('#snap');
 const offButton = document.querySelector('#off');
 const radios = [...document.querySelectorAll('input[name="mode"]')];
@@ -31,6 +34,9 @@ let mode = 'Green';
 let on = false;
 let starting = false;
 let stream = null;
+let facing = 'user';
+let cameras = 0;
+let picture = null;
 let shades = null;
 let channels = [null, null, null];
 let frame = 0;
@@ -55,7 +61,8 @@ function render() {
 			: 'Game camera view'
 	);
 	onButton.hidden = on;
-	snapButton.hidden = !on;
+	switchButton.hidden = !on || cameras < 2;
+	snapButton.hidden = !on && !picture;
 	offButton.hidden = !on;
 }
 
@@ -69,27 +76,26 @@ function paint() {
 		paintScreen(image.data, channels[f], PALETTES.Gray, TINTS[f]);
 		ctx.putImageData(image, (f % 2) * SCREEN_WIDTH, Math.floor(f / 2) * SCREEN_HEIGHT);
 	}
-	if (on) paintColor(image.data, channels);
+	if (on || picture) paintColor(image.data, channels);
 	else paintScreen(image.data, null, PALETTES.Gray);
 	ctx.putImageData(image, SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
+function toSensor(source, width, height, mirror) {
+	const side = Math.min(width, height);
+	sensorCtx.setTransform(mirror ? -1 : 1, 0, 0, 1, mirror ? SENSOR : 0, 0);
+	sensorCtx.drawImage(source, (width - side) / 2, (height - side) / 2, side, side, 0, 0, SENSOR, SENSOR);
+	return sensorCtx.getImageData(0, 0, SENSOR, SENSOR).data;
+}
+
+function processPicture() {
+	if (mode === 'Color') channels = FILTERS.map((f) => capture(picture, Math.random, f));
+	else shades = capture(picture, Math.random);
+}
+
 function tick() {
 	if (video.readyState >= video.HAVE_CURRENT_DATA) {
-		const side = Math.min(video.videoWidth, video.videoHeight);
-		sensorCtx.setTransform(-1, 0, 0, 1, SENSOR, 0);
-		sensorCtx.drawImage(
-			video,
-			(video.videoWidth - side) / 2,
-			(video.videoHeight - side) / 2,
-			side,
-			side,
-			0,
-			0,
-			SENSOR,
-			SENSOR
-		);
-		const rgba = sensorCtx.getImageData(0, 0, SENSOR, SENSOR).data;
+		const rgba = toSensor(video, video.videoWidth, video.videoHeight, facing === 'user');
 		if (mode === 'Color') {
 			const filter = FILTERS[Math.floor(frames++ / WHEEL_FRAMES) % 3];
 			channels[filter] = capture(rgba, Math.random, filter);
@@ -101,14 +107,23 @@ function tick() {
 	frame = requestAnimationFrame(tick);
 }
 
-function stop() {
+function closeCamera() {
 	cancelAnimationFrame(frame);
 	stream?.getTracks().forEach((track) => track.stop());
 	stream = null;
 	video.srcObject = null;
+	on = false;
+}
+
+function clearScreen() {
+	picture = null;
 	shades = null;
 	channels = [null, null, null];
-	on = false;
+}
+
+function stop() {
+	closeCamera();
+	clearScreen();
 	render();
 	paint();
 }
@@ -121,7 +136,7 @@ async function open() {
 	}
 	try {
 		stream = await navigator.mediaDevices.getUserMedia({
-			video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+			video: { facingMode: { ideal: facing }, width: { ideal: 640 }, height: { ideal: 480 } },
 			audio: false
 		});
 	} catch {
@@ -138,6 +153,9 @@ async function open() {
 		status.textContent = 'The camera started, but its video wouldn’t play.';
 		return;
 	}
+	const devices = await navigator.mediaDevices.enumerateDevices().catch(() => []);
+	cameras = devices.filter((device) => device.kind === 'videoinput').length;
+	clearScreen();
 	on = true;
 	render();
 	frame = requestAnimationFrame(tick);
@@ -151,6 +169,34 @@ async function start() {
 	} finally {
 		starting = false;
 	}
+}
+
+async function switchCamera() {
+	if (starting) return;
+	facing = facing === 'user' ? 'environment' : 'user';
+	closeCamera();
+	await start();
+	render();
+	paint();
+}
+
+async function openPicture(file) {
+	if (!file) return;
+	status.textContent = '';
+	let bitmap;
+	try {
+		bitmap = await createImageBitmap(file);
+	} catch {
+		status.textContent = 'That file could not be opened as an image.';
+		return;
+	}
+	closeCamera();
+	clearScreen();
+	picture = toSensor(bitmap, bitmap.width, bitmap.height, false);
+	bitmap.close();
+	processPicture();
+	render();
+	paint();
 }
 
 function snap() {
@@ -172,11 +218,18 @@ function snap() {
 }
 
 onButton.addEventListener('click', start);
+switchButton.addEventListener('click', switchCamera);
+pickButton.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => {
+	openPicture(fileInput.files[0]);
+	fileInput.value = '';
+});
 snapButton.addEventListener('click', snap);
 offButton.addEventListener('click', stop);
 for (const radio of radios) {
 	radio.addEventListener('change', () => {
 		mode = radio.value;
+		if (picture) processPicture();
 		render();
 		paint();
 	});
@@ -187,5 +240,6 @@ new ResizeObserver(render).observe(stage);
 still.style.display = 'none';
 screen.hidden = false;
 onButton.disabled = false;
+pickButton.disabled = false;
 render();
 paint();
