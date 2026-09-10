@@ -45,6 +45,7 @@ export declare function autoContrast(gray: Uint8ClampedArray, saturation?: numbe
 export declare function sensorArtifacts(gray: Uint8ClampedArray, size: number, rand: () => number): void;
 export declare function enhanceEdges(gray: Uint8ClampedArray, size: number, alpha?: number): Uint8ClampedArray;
 export declare function dither(gray: Uint8ClampedArray, size: number): Uint8Array;
+export declare function shrink(shades: Uint8Array, factor: number): Uint8Array;
 export declare function capture(rgba: ArrayLike<number>, rand: () => number, filter?: Filter): Uint8Array;
 
 export declare function paintScreen(

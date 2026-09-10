@@ -168,6 +168,19 @@ export function dither(gray, size) {
 	return shades;
 }
 
+export function shrink(shades, factor) {
+	const width = WIDTH / factor;
+	const small = new Uint8Array(width * (HEIGHT / factor));
+	for (let i = 0; i < small.length; i++) {
+		const left = (i % width) * factor;
+		const top = Math.floor(i / width) * factor;
+		let sum = 0;
+		for (let y = top; y < top + factor; y++) for (let x = left; x < left + factor; x++) sum += shades[y * WIDTH + x];
+		small[i] = Math.round(sum / (factor * factor));
+	}
+	return small;
+}
+
 export function capture(rgba, rand, filter) {
 	const gray = toGray(rgba, filter);
 	autoContrast(gray);
