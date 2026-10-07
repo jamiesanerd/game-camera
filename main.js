@@ -207,14 +207,18 @@ function snap() {
 	const bigCtx = big.getContext('2d');
 	bigCtx.imageSmoothingEnabled = false;
 	bigCtx.drawImage(screen, sx, sy, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0, big.width, big.height);
-	big.toBlob((blob) => {
-		if (!blob) return;
-		const a = document.createElement('a');
-		a.href = URL.createObjectURL(blob);
-		a.download = `game-camera-${Date.now()}.png`;
-		a.click();
-		setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-	});
+	const bytes = Uint8Array.from(atob(big.toDataURL('image/png').split(',')[1]), (c) => c.charCodeAt(0));
+	const file = new File([bytes], `game-camera-${Date.now()}.png`, { type: 'image/png' });
+	const isPhone = matchMedia('(pointer: coarse)').matches;
+	if (isPhone && navigator.canShare?.({ files: [file] })) {
+		navigator.share({ files: [file] }).catch(() => {});
+		return;
+	}
+	const a = document.createElement('a');
+	a.href = URL.createObjectURL(file);
+	a.download = file.name;
+	a.click();
+	setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
 onButton.addEventListener('click', start);
